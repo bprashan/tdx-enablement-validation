@@ -5,7 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'libs'))
 from rust import setup_rust
 from kms import setup_kms_environment
 from kbs import setup_kbs_environment
-from fde import setup_fde_environment, generate_rsa_key_pair
+from fde import setup_fde_environment
 from tdx import clone_and_patch_tdx_repository, create_td_image
 from docker import setup_docker_environment
 from utils import delete_directory_with_sudo, delete_files_in_subdirectories
@@ -35,9 +35,6 @@ def setup_environment():
 
     print("Creating TD image")
     create_td_image()
-
-    print("Generate RSA key pair")
-    generate_rsa_key_pair()
 
 @pytest.fixture(autouse=True)
 def cleanup():
