@@ -6,6 +6,9 @@ import re
 import binascii
 import urllib.request
 import sys
+from tdx import clone_and_patch_tdx_repository, create_td_image
+sys.path.insert(1, os.path.join(os.getcwd(), 'configuration'))
+import configuration
 
 def update_and_install_packages():
     """Update package lists and install specified packages."""
@@ -84,14 +87,21 @@ def setup_ovmf_tdx(directory='data'):
     print(f"Extracted {file_name} to {extract_dir}")
 
 def setup_fde_environment():
-    repo_url = "https://github.com/IntelConfidentialComputing/TDXSampleUseCases.git"
-    repo_name = repo_url.split('/')[-1].replace('.git', '')
     update_and_install_packages()
-    clone_repo(repo_url, repo_name, 'jkr0103/issues_fixes')
-    fde_dir = os.path.join(repo_name, "full-disk-encryption")
-    os.chdir(fde_dir)
+    dir_name = configuration.repo_url.split('/')[-1].replace('.git','')
+    clone_repo(configuration.repo_url, dir_name , configuration.branch)
+    os.chdir(os.path.expanduser('~') + "/" + configuration.folder_name + "/" + dir_name +"/full-disk-encryption")
     print(f"Changed working directory to {os.getcwd()}")
     build_project()
+    print("Cloning and patching TDX repository")
+    clone_and_patch_tdx_repository()
+    print("Creating TD image")
+    create_td_image()
+    # generate_rsa_key_pair()
+    # generate_tmp_fde_key()
+    # setup_ovmf_tdx()
+
+def before_testcase():
     generate_rsa_key_pair()
     generate_tmp_fde_key()
     setup_ovmf_tdx()
@@ -175,7 +185,7 @@ def launch_td_guest():
     """Launch the TD guest."""
     set_environment_variables("TD_IMG", os.environ["ENCRYPTED_IMAGE_PATH"])
     ovmf_path = os.getenv('OVMF_PATH')
-    command = [f"tdx/guest-tools/run_td.sh -d false -f {ovmf_path}"]
+    command = [f"canonical-tdx/guest-tools/run_td.sh -d false -f {ovmf_path}"]
 
     print("Launching TD guest...")
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -250,9 +260,9 @@ def retrieve_encryption_key():
 
 def verify_td_encrypted_image(ssh_command=None):
     if not ssh_command:
-        ssh_command = "sshpass -p 123456 ssh -o StrictHostKeyChecking=no -p 10022 root@localhost 'sudo blkid'"
+        ssh_command = "sshpass -p 123456 ssh -o StrictHostKeyChecking=no -p 10022 root@localhost 'sudo blkid;uname -a;df -h | grep -E \'/boot | /rootfs-\'"
     result = execute_td_command(ssh_command)
-    if result is not None and 'TYPE="crypto_LUKS"' in result:
+    if result is not None and ' TYPE="crypto_LUKS" PARTLABEL="rootfs"' in result:
         return True
     else:
         return False

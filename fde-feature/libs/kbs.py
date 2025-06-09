@@ -3,10 +3,11 @@ import os
 from utils import get_ip_address, clone_repo, set_environment_variables, run_command
 import shutil
 import time
+import sys
+sys.path.insert(1, os.path.join(os.getcwd(), 'configuration'))
+import configuration
 
-dir_name = "ita-kbs"
-container_name = "kbs"
-
+ita_dir_folder_path = os.path.expanduser('~') + "/" + configuration.folder_name + "/" + configuration.ita_dir_name
 class KBSEnvConfig:
     def __init__(self, **kwargs):
         self.config = {
@@ -24,13 +25,14 @@ class KBSEnvConfig:
         }
         self.config.update(kwargs)
 
-    def create_env_file(self, file_name="kbs.env"):
+    def create_env_file(self, file_name=ita_dir_folder_path+"/kbs.env"):
+        #directory = os.path.expanduser('~') + "/" + configuration.folder_name  +"/" + configuration.ita_dir_name + file_name
         content = "\n".join([f"{key}={value}" for key, value in self.config.items()])
         with open(file_name, 'w') as file:
             file.write(content)
 
 def build_kbs():
-    run_command(['make docker'], shell=True, cwd=f"{os.getcwd()}/{dir_name}")
+    run_command(['make docker'], shell=True, cwd=ita_dir_folder_path)
 
 def setup_directories():
     """Create the required directories."""
@@ -43,7 +45,7 @@ def setup_directories():
     ]
 
     for directory in directories:
-        full_path = os.path.join(dir_name, directory)
+        full_path = os.path.join(ita_dir_folder_path, directory)
         os.makedirs(full_path, exist_ok=True)
         print(f"Directory created: {full_path}")
 
@@ -51,35 +53,35 @@ def run_kbs_container(env_file):
     """Run the KBS Docker container with the specified environment file and container name."""
     # Stop and remove any existing container with the specified name
     try:
-        subprocess.run(["docker", "rm", "-f", container_name], check=True)
-        print(f"Existing Docker container '{container_name}' removed.")
+        subprocess.run(["docker", "rm", "-f", configuration.container_name], check=True)
+        print(f"Existing Docker container '{configuration.container_name}' removed.")
     except subprocess.CalledProcessError:
-        print(f"No existing Docker container named '{container_name}' to remove.")
+        print(f"No existing Docker container named '{configuration.container_name}' to remove.")
 
     # Define the Docker run command
     command = [
-        "docker", "run", "-d", "--restart", "unless-stopped", "--name", container_name,
+        "docker", "run", "-d", "--restart", "unless-stopped", "--name", configuration.container_name,
         "--env-file", env_file,
         "--net=host",
-        "-v", f"{os.getcwd()}/{dir_name}/data/certs:/etc/kbs/certs",
+        "-v", f"{ita_dir_folder_path}/data/certs:/etc/kbs/certs",
         "-v", "/etc/hosts:/etc/hosts",
-        "-v", f"{os.getcwd()}/{dir_name}/data:/opt/kbs",
+        "-v", f"{ita_dir_folder_path}/data:/opt/kbs",
         "trustauthority/key-broker-service:v1.3.0"
     ]
     try:
         # Run the command
         subprocess.run(command, check=True)
-        print(f"Docker container '{container_name}' started successfully.")
+        print(f"Docker container '{configuration.container_name}' started successfully.")
     except subprocess.CalledProcessError as e:
-        print(f"An error occurred while starting the Docker container '{container_name}': {e}")
+        print(f"An error occurred while starting the Docker container '{configuration.container_name}': {e}")
 
 def get_docker_logs():
     """Fetch and display logs for the specified Docker container."""
-    result = subprocess.run(['docker', 'logs', container_name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    result = subprocess.run(['docker', 'logs', configuration.container_name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     return result.stdout.decode()
 
 def setup_kbs_environment():
-    clone_repo("https://github.com/intel/trustauthority-kbs.git", dir_name, branch="v1.3.0")
+    clone_repo(configuration.kbs_url, configuration.ita_dir_name, configuration.kbs_branch)
     build_kbs()
     setup_directories()
 
@@ -88,7 +90,7 @@ def check_error_messages(logs):
     return any(msg in logs for msg in error_messages)
 
 def run_kbs():
-    env_file_path = f"{os.getcwd()}/{dir_name}/kbs.env"
+    env_file_path = f"{ita_dir_folder_path}/kbs.env"
     print(env_file_path)
     config = KBSEnvConfig(TRUSTAUTHORITY_API_KEY="aeKQBT22ux7tZVB1uLyQN58Z1M9J0Bwg8LAQgLpl")
     config.create_env_file(env_file_path)
@@ -101,5 +103,5 @@ def run_kbs():
         return False
     set_environment_variables(key="KBS_URL", data=f"https://{get_ip_address()}:9443")
     set_environment_variables(key="KBS_ENV", data=env_file_path)
-    set_environment_variables(key="KBS_CERT_PATH", data=f"{os.getcwd()}/{dir_name}/data/certs/tls/tls.crt")
+    set_environment_variables(key="KBS_CERT_PATH", data=f"{ita_dir_folder_path}/data/certs/tls/tls.crt")
     return True

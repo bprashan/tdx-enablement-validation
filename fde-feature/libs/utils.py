@@ -5,6 +5,8 @@ import socket
 import shutil
 import psutil
 import time
+sys.path.insert(1, os.path.join(os.getcwd(), 'configuration'))
+import configuration
 
 def run_command(command, shell=False, cwd=None):
     """Run a shell command."""
@@ -80,16 +82,30 @@ def get_ip_address():
         print(f"An error occurred: {e}")
         return None
 
-def clone_repo(repo_url, clone_dir, branch=None):
+def clone_repo(repo_url, dir_name, branch=None):
     """Clone a git repository into a specified directory."""
-    if os.path.exists(clone_dir):
-        shutil.rmtree(clone_dir)
+    if (repo_url == configuration.canonical_tdx_url):
+        path = os.path.expanduser('~') + "/" + configuration.folder_name + "/" + configuration.dir_name
+        os.chdir(path)
+    else:
+        path = os.path.expanduser('~') + "/" + configuration.folder_name 
+    #if os.path.exists(path):
+    #    shutil.rmtree(path)
 
-    clone_command = ["git", "clone"]
+    print(path)
+    try:
+        os.makedirs(path, exist_ok=True)
+        os.chdir(path)
+    except Exception as error:
+        print(f"Error creating or changing directory: {error}")
+        sys.exit(1)
+    
+    clone_command = ["git", "clone", repo_url]
     if branch:
         clone_command.extend(["-b", branch])
-    clone_command.extend([repo_url, clone_dir])
-
+    clone_command.extend([dir_name])
+    print(clone_command)
+    
     run_command(clone_command)
 
 def remove_host_from_known_hosts(host, port, known_hosts_file='/home/sdp/.ssh/known_hosts'):
@@ -126,6 +142,10 @@ def delete_directory_with_sudo(directory_path):
     if os.path.exists(directory_path):
         try:
             # Execute the command to remove the directory with sudo
+            run_command(['sudo', 'kill', '-9' ,'$(sudo ps -aux | grep vault | awk \'{print $2}\')'])
+            run_command(['docker', 'stop', '$(docker ps -aq'])
+            run_command(['docker', 'rm', '$(docker ps -aq'])
+            run_command(['sudo', 'docker', 'system', 'prune' ,'-af'])
             run_command(['sudo', 'rm', '-rf', directory_path])
             print(f"Successfully deleted the directory: {directory_path}")
         except subprocess.CalledProcessError as e:
