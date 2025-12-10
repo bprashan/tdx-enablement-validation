@@ -1,16 +1,15 @@
-repo_url="https://github.com/IntelConfidentialComputing/TDXSampleUseCases.git"
-branch=None
+repo_url="https://github.com/intel-innersource/applications.security.confidential-computing.tdx.tools.public.git"
+branch='harshtpa/trustee-fde-direct-boot-updates'
 folder_name="fde_source"
-dir_name = "TDXSampleUseCases/full-disk-encryption"
+dir_name = "fde/full-disk-encryption"
+repo_name ='fde'
 
-kbs_url="https://github.com/intel/trustauthority-kbs.git"
-kbs_branch="v1.3.0"
-ita_dir_name = "ita-kbs"
-container_name="kbs-container"
-
-canonical_tdx_url="https://github.com/canonical/tdx.git"
-canonical_tdx_branch="3.1"
 canonical_tdx_dir = "canonical-tdx"
+
+trustee_config_file = "setup_config.sh"
+trustee_reference_value_dir = "trustee/config-data/reference-values"
+
+
 
 image_directory =  "/fde_source/TDXSampleUseCases/full-disk-encryption/canonical-tdx/guest-tools/image"
 

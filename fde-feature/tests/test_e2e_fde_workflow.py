@@ -20,22 +20,13 @@ def generate_random_token( length=24):
 
 def encrypt_base_image( skip_encrypt_image_path=False, extra_args=None):
     """Encrypts the base image to get the QUOTE."""
-    assert encrypt_image("GET_QUOTE", skip_encrypt_image_path=skip_encrypt_image_path, extra_args=extra_args), "Failed to encrypt the base image to get the QUOTE"
+    assert encrypt_image(skip_encrypt_image_path=skip_encrypt_image_path, extra_args=extra_args), "Failed to encrypt the base image to get the QUOTE"
 
-def fetch_td_quote_and_encryption_keys():
+def fetch_td_quote():
     """Fetches the TD quote and encryption keys, and sets them as environment variables."""
     quote = get_td_measurement()
     quote_set_success = set_environment_variables(key="QUOTE", data=quote)
-    encryption_keys = retrieve_encryption_key()
-    keys_set_success = set_environment_variables(data=encryption_keys)
-    return quote_set_success, keys_set_success
-
-def encrypt_and_verify_image( skip_encrypt_image_path=False, extra_args=None):
-    """Encrypts the image using the FDE key and verifies the TD encrypted image."""
-    print("creating the encrypted image with FDE key")
-    assert encrypt_image("TD_FDE_BOOT", skip_encrypt_image_path=skip_encrypt_image_path, extra_args=extra_args), "Failed to encrypt the base image"
-    print("verifying the TD encrypted image")
-    return verify_td_encrypted_image()
+    return quote_set_success
 
 def run_command_with_unset_env( cmd, unset_var):
     """Runs a command with a specified environment variable unset."""
@@ -60,12 +51,11 @@ def run_command_with_forbidden_param( command, forbidden_param):
 
 def test_e2e_fde_workflow():
     """Tests the end-to-end FDE workflow."""
-    assert run_kbs(), "Failed to run KBS"
     encrypt_base_image()
-    quote_set_success, keys_set_success = fetch_td_quote_and_encryption_keys()
-    assert quote_set_success, "Failed to generate TD measurement"
-    assert keys_set_success, "Failed to generate encryption keys"
-    assert encrypt_and_verify_image(), "TD encrypted image verification failed"
+    quote_set_success = fetch_td_quote()
+    assert quote_set_success(), "Failed to generate TD measurement"
+    assert store_key_in_kbs(), "Failed to store encryption key in KBS"
+    assert verify_td_encrypted_image(), "TD encrypted image verification failed"
 
 def test_e2e_fde_workflow_with_r_and_b_arg():
     """Tests the end-to-end FDE workflow with -r and -b arguments."""
@@ -158,7 +148,7 @@ def test_e2e_fde_workflow_intel():
     quote_set_success, keys_set_success = fetch_td_quote_and_encryption_keys()
     assert quote_set_success, "Failed to generate TD measurement"
     assert keys_set_success, "Failed to generate encryption keys"
-    assert encrypt_and_verify_image(), "TD encrypted image verification failed"
+    assert launch_and_verify_encrypted_image(), "TD encrypted image verification failed"
 
 def test_fde_workflow_with_incorrect_vault_token():
     """Tests the FDE workflow with an incorrect Vault token."""

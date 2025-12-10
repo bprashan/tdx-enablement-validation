@@ -6,7 +6,7 @@ from rust import setup_rust
 from kms import setup_kms_environment
 from kbs import setup_kbs_environment
 from fde import setup_fde_environment
-from tdx import clone_and_patch_tdx_repository, create_td_image
+from tdx import update_canonical_tdx_repository, create_td_image
 from docker import setup_docker_environment
 from utils import delete_directory_with_sudo, delete_files_in_subdirectories, run_command, kill_docker_vault
 
@@ -31,7 +31,7 @@ def setup_environment():
     setup_kbs_environment()
 
     print("Cloning and patching TDX repository")
-    clone_and_patch_tdx_repository()
+    update_canonical_tdx_repository()
 
     print("Creating TD image")
     create_td_image()

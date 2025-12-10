@@ -83,12 +83,14 @@ def get_ip_address():
         print(f"An error occurred: {e}")
         return None
 
-def clone_repo(repo_url, clone_dir, branch=None):
+def clone_repo(repo_url, clone_dir, recurse_submodules = False, branch=None):
     """Clone a git repository into a specified directory."""
     if os.path.exists(clone_dir):
         shutil.rmtree(clone_dir)
 
     clone_command = ["git", "clone"]
+    if recurse_submodules:
+        clone_command.append("--recurse-submodules")
     if branch:
         clone_command.extend(["-b", branch])
     clone_command.extend([repo_url, clone_dir])
