@@ -1,0 +1,65 @@
+vtpm-td (0.3.1-mvp11) jammy; urgency=medium
+
+  * vtpm-td: https://github.com/intel/vtpm-td/tree/v0.3.1
+
+ -- Jialei Feng <jialei.feng@intel.com>  Thu, 15 Feb 2024 14:41:00 +0800
+
+vtpm-td (0.3.0-mvp10) jammy; urgency=medium
+
+  * vtpm-td: https://github.com/intel/vtpm-td/tree/v0.3.0
+
+ -- Jialei Feng <jialei.feng@intel.com>  Tue, 26 Sep 2023 14:22:00 +0800
+
+vtpm-td (0.2.1-mvp9) jammy; urgency=medium
+
+  * vtpm-td: https://github.com/intel/vtpm-td/tree/v0.2.1
+
+ -- Jialei Feng <jialei.feng@intel.com>  Thu, 14 Sep 2023 11:12:00 +0800
+
+vtpm-td (0.2.0-mvp8) jammy; urgency=medium
+
+  * vtpm-td: https://github.com/intel/vtpm-td/tree/v0.2.0
+
+ -- Jialei Feng <jialei.feng@intel.com>  Tue, 1 Aug 2023 13:50:00 +0800
+
+vtpm-td (0.1.1-mvp7) jammy; urgency=medium
+
+  * vtpm-td: https://github.com/intel/vtpm-td/tree/v0.1.1
+
+ -- Jialei Feng <jialei.feng@intel.com>  Tue, 6 Jul 2023 09:35:00 +0800
+
+vtpm-td (0.1.0-mvp6) jammy; urgency=medium
+
+  * vtpm-td: https://github.com/intel/vtpm-td/tree/v0.1.0
+
+ -- Jialei Feng <jialei.feng@intel.com>  Wed, 5 Jul 2023 15:28:00 +0800
+
+vtpm-td (2023ww27.2-mvp5) jammy; urgency=medium
+
+  * vtpm-td: update to ww27.2
+
+ -- Jialei Feng <jialei.feng@intel.com>  Wed, 5 Jul 2023 10:05:00 +0800
+
+vtpm-td (2023ww26.3-mvp4) jammy; urgency=medium
+
+  * vtpm-td: update to ww26.3
+
+ -- Jialei Feng <jialei.feng@intel.com>  Wed, 28 Jun 2023 13:21:00 +0800
+
+vtpm-td (2023ww26.1-mvp3) jammy; urgency=medium
+
+  * vtpm-td: update to ww26.1
+
+ -- Jialei Feng <jialei.feng@intel.com>  Sun, 25 Jun 2023 15:26:00 +0800
+
+vtpm-td (202306014-mvp2) jammy; urgency=medium
+
+  * vtpm-td: Add shared_mask in tdvmcall service
+
+ -- Jialei Feng <jialei.feng@intel.com>  Wed, 14 Jun 2023 17:55:00 +0800
+
+vtpm-td (20230608-mvp1) jammy; urgency=medium
+
+  * vtpm-td: initial build
+
+ -- Jialei Feng <jialei.feng@intel.com>  Thu, 8 Jun 2023 14:42:00 +0800

@@ -5,6 +5,8 @@ import socket
 import shutil
 import psutil
 import time
+sys.path.insert(1, os.path.join(os.getcwd(), 'configuration'))
+import configuration
 
 def run_command(command, shell=False, cwd=None):
     """Run a shell command."""
@@ -20,24 +22,31 @@ def run_command(command, shell=False, cwd=None):
         print(f"Error: {e.stderr}")
         return e.stderr
 
-def run_command_with_popen(command, cwd=None, shell=False):
+def run_command_with_popen(command, cwd=None, shell=False, timeout=600):
     """Run a command in a subprocess and print the output in real-time."""
     print(f"Executing command : {command}")
     process = subprocess.Popen(command, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    # Print the output in real-time
+    output_lines = []
+    start_time = time.time()
     while True:
         output = process.stdout.readline()
         if output == '' and process.poll() is not None:
             break
         if output:
             print(output.strip())
+            output_lines.append(output.strip())
+        elapsed_time = time.time() - start_time
+        if elapsed_time > timeout:
+            print("Timeout reached. Terminating process.")
+            process.terminate()
+            return -1, output_lines
 
     # Print any remaining errors
-    stderr = process.communicate()[1]
+    stdout , stderr = process.communicate()
     if stderr:
         print(stderr.strip())
-    return process.returncode
+    return process.returncode, output_lines , stderr
 
 def set_environment_variables(key=None, data=None):
     """Set environment variables for a specific key and from a string of key-value pairs.
@@ -141,6 +150,15 @@ def find_and_kill_process(file_path):
             continue
 
     print(f"No process found using the file: {file_path}")
+
+def kill_docker_vault():
+    try:
+        run_command(['sudo', 'kill', '-9' ,'$(sudo ps -aux | grep vault | awk \'{print $2}\')'])
+        run_command(['docker', 'stop', configuration.container_name])
+        run_command(['docker', 'rm', configuration.container_name])
+        run_command(['sudo', 'docker', 'system', 'prune' ,'-af'])
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to kill process: {e}")
 
 def manage_qcow2_image(image_path, mount_point, partition):
     """

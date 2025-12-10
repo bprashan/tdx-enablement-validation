@@ -1,0 +1,52 @@
+- name: Copy Packages to Remote
+  ansible.builtin.copy:
+    src: "tdx_repo"
+    dest: "/srv"
+    remote_src: false
+
+- shell: ls /srv/tdx_repo/
+  register: remote_dir_files_list
+
+- name: List packages in remote repo
+  debug:
+    msg: "{{ remote_dir_files_list.stdout_lines }}"
+
+- name: Install all packages
+  shell: |
+    cd /srv/tdx_repo/
+    apt -y update
+    apt -y --allow-downgrades install --fix-broken ./*.deb
+  register: package_install_result
+  when: ansible_distribution == 'Ubuntu'
+
+- name: Update repositories cache
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Install all packages
+  debug:
+    msg: "{{ package_install_result.stdout_lines }}"
+  when: ansible_distribution == 'Ubuntu'
+
+- name: check if numa_balancing is configured in the boot command
+  lineinfile:
+    backup: true
+    path: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX=".*numa_balancing=disable'
+    state: absent
+  check_mode: true
+  register: grub_cmdline_check
+  changed_when: false
+
+- name: insert numa_balancing if missing
+  lineinfile:
+    backrefs: true
+    path: /etc/default/grub
+    regexp: "^(GRUB_CMDLINE_LINUX=\".*)\"$"
+    line: '\1 numa_balancing=disable"'
+  when: grub_cmdline_check.found == 0
+
+- name: Update grub2 [Ubuntu]
+  shell: |
+    update-grub2
+  when: ansible_distribution == 'Ubuntu'

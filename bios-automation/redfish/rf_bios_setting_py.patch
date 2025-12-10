@@ -1,0 +1,54 @@
+diff --git a/scripts/rf_bios_settings.py b/scripts/rf_bios_settings.py
+index 3a8dd5a..04bcbf8 100644
+--- a/scripts/rf_bios_settings.py
++++ b/scripts/rf_bios_settings.py
+@@ -19,12 +19,14 @@ import redfish_utilities
+ import traceback
+ import sys
+ from redfish.messages import RedfishPasswordChangeRequiredError
++from urllib.parse import urlparse, urlunparse
+
+ # Get the input arguments
+ argget = argparse.ArgumentParser(description="A tool to manager BIOS settings for a system")
+ argget.add_argument("--user", "-u", type=str, required=True, help="The user name for authentication")
+ argget.add_argument("--password", "-p", type=str, required=True, help="The password for authentication")
+ argget.add_argument("--rhost", "-r", type=str, required=True, help="The address of the Redfish service (with scheme)")
++argget.add_argument("--lhost", "-l", type=str, required=False, help="When port forwarding is used, the local ip and port of the remote Redfish service")
+ argget.add_argument("--system", "-s", type=str, help="The ID of the system to manage")
+ argget.add_argument(
+     "--attribute",
+@@ -58,10 +60,32 @@ if args.debug:
+ # Set up the Redfish object
+ redfish_obj = None
+ try:
++    redfish_url=args.rhost
++    login_header = {}
++
++    # If a local port forwarding is used, change base URL accordingly and set Host header to original value
++    if args.lhost:
++        # Parse both URLs
++        rhost_parsed = urlparse(args.rhost)
++        lhost_parsed = urlparse(args.lhost)
++
++        # Extract hostname and port from rhost
++        rhost_netloc = rhost_parsed.netloc
++
++        # Construct new netloc using hostname of lhost and its port (if any)
++        new_netloc = lhost_parsed.hostname  # Use hostname from url2
++        if lhost_parsed.port:
++            new_netloc += f":{lhost_parsed.port}"  # Append port if present
++
++        # Construct the new URL with hostname2 and the original path from url1
++        redfish_url = urlunparse(lhost_parsed._replace(netloc=new_netloc, path=rhost_parsed.path))
++
++        login_header["Host"] = rhost_netloc
++
+     redfish_obj = redfish.redfish_client(
+-        base_url=args.rhost, username=args.user, password=args.password, timeout=15, max_retry=3
++        base_url=redfish_url, username=args.user, password=args.password, timeout=15, max_retry=3
+     )
+-    redfish_obj.login(auth="session")
++    redfish_obj.login(auth="session", headers=login_header)
+ except RedfishPasswordChangeRequiredError:
+     redfish_utilities.print_password_change_required_and_logout(redfish_obj, args)
+     sys.exit(1)

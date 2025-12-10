@@ -2,6 +2,7 @@ import subprocess
 import re
 import os
 from utils import set_environment_variables
+import time
 
 
 def is_vault_installed():
@@ -65,28 +66,23 @@ def kill_existing_vault_process(port=8200):
 def start_vault_server():
     """Kill any existing Vault process and start the Vault server in development mode."""
     kill_existing_vault_process()
-    process = subprocess.Popen(["vault", "server", "-dev"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    return process
 
-def get_vault_root_token(process):
-    """Extract the root token from the Vault server's output."""
-    root_token = None
-    while True:
-        line = process.stdout.readline()
-        if not line:
-            break
-        print(line.strip())  # Print each line for debugging purposes
-        match = re.search(r'Root Token: (\S+)', line)
-        if match:
-            root_token = match.group(1)
-            break
+    # Generate a random token using openssl
+    result = subprocess.run(['openssl', 'rand', '-hex', '16'], capture_output=True, text=True)
+    vault_root_token = result.stdout.strip()
 
-    return root_token
+    # Start the Vault server in development mode with the generated token
+    subprocess.Popen(['vault', 'server', '-dev', '-dev-root-token-id', vault_root_token])
+    print(f"Vault server started with root token: {vault_root_token}")
+    time.sleep(5)  # Wait for the server to start
+
+    # Set the environment variable VAULT_ROOT_TOKEN
+    set_environment_variables(key="VAULT_ROOT_TOKEN", data=vault_root_token)
 
 def login_to_vault(root_token):
     """Log in to Vault using the root token."""
-    os.environ['VAULT_ADDR'] = 'http://127.0.0.1:8200'
 
+    set_environment_variables(key="VAULT_ADDR", data='http://127.0.0.1:8200')
     login_command = ["vault", "login", root_token]
     login_process = subprocess.run(login_command, capture_output=True, text=True)
 
@@ -111,13 +107,7 @@ def enable_secrets_engine():
 
 def setup_kms_environment():
     setup_vault()
-    process = start_vault_server()
-    root_token = get_vault_root_token(process)
-
-    if root_token:
-        # print(f"Root Token: {root_token}")
-        if login_to_vault(root_token):
-            enable_secrets_engine()
-            set_environment_variables(key="VAULT_CLIENT_TOKEN", data=root_token)
-    else:
-        print("Root Token not found in the output.")
+    start_vault_server()
+    root_token = os.environ['VAULT_ROOT_TOKEN']
+    if login_to_vault(root_token):
+        enable_secrets_engine()

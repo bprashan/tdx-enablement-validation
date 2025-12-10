@@ -1,0 +1,35 @@
+# Basic setup for a TD Host
+---
+- name: "Setup Requirements"
+  become: true
+  hosts: all
+  tasks:
+    - name: "Basic Tools"
+      package:
+        name:
+          - wget
+        state: present
+
+- name: "Setup TDX Repo"
+  hosts: all
+  become: true
+  vars:
+    repo_type: build_repo
+    server_type: host
+  roles:
+    - setup_tdx_repo
+
+- name: "Reboot Server"
+  hosts: all
+  become: true
+  vars:
+    reboot_after_complete: false
+  tasks:
+    - shell: |
+        echo "reboot"
+      register: reboot
+    - reboot:
+        msg: "Reboot to new TDX stack"
+        pre_reboot_delay: 5
+        post_reboot_delay: 60
+      when: (reboot.stdout is search("reboot")) and (reboot_after_complete)

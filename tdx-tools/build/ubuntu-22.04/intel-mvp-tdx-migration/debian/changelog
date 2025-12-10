@@ -1,0 +1,59 @@
+mig-td (0.3.1-mvp12) jammy; urgency=medium
+
+  * https://github.com/intel/MigTD/releases/tag/v0.3.1
+
+ -- Jialei Feng <jialei.feng@intel.com>  Tue, 26 Sep 2023 13:32:00 +0800
+
+mig-td (0.3.0-mvp11) jammy; urgency=medium
+
+  * Add migtd-serial.bin
+
+ -- Jialei Feng <jialei.feng@intel.com>  Tue, 19 Sep 2023 13:38:00 +0800
+
+mig-td (0.3.0-mvp10) jammy; urgency=medium
+
+  * https://github.com/intel/MigTD/releases/tag/v0.3.0
+
+ -- Jialei Feng <jialei.feng@intel.com>  Mon, 4 Sep 2023 15:45:00 +0800
+
+td-migration (0.2.3-mvp9) jammy; urgency=medium
+
+  * https://github.com/intel/MigTD/releases/tag/v0.2.3
+
+ -- Jialei Feng <jialei.feng@intel.com>  Wed, 5 Jul 2023 14:08:00 +0800
+
+td-migration (2023ww27.1-mvp8) jammy; urgency=medium
+
+  * td-migration: add migtd.servtd_info_hash
+
+ -- Jialei Feng <jialei.feng@intel.com>  Tue, 4 Jul 2023 15:16:00 +0800
+
+td-migration (2023ww27.1-mvp7) jammy; urgency=medium
+
+  * td-migration: https://github.com/intel/MigTD/tree/2023ww27.1
+
+ -- Jialei Feng <jialei.feng@intel.com>  Mon, 3 Jul 2023 14:47:00 +0800
+
+td-migration (2023ww25.3-mvp6) jammy; urgency=medium
+
+  * td-migration: use public https://github.com/intel/MigTD/tree/2023ww25.3
+
+ -- Jialei Feng <jialei.feng@intel.com>  Tue, 27 Jun 2023 16:57:00 +0800
+
+td-migration (0.2.2-mvp5) jammy; urgency=medium
+
+  * td-migration: use public https://github.com/intel/MigTD/tree/v0.2.2
+
+ -- Jialei Feng <jialei.feng@intel.com>  Mon, 12 Jun 2023 13:44:00 +0800
+
+td-migration (2023ww13.4-mvp4) jammy; urgency=medium
+
+  * td-migration: update to 2023ww13.4
+
+ -- Jialei Feng <jialei.feng@intel.com>  Fri, 31 Mar 2023 14:31:00 +0800
+
+td-migration (0.2.1-mvp3) jammy; urgency=medium
+
+  * td-migration: init build
+
+ -- Jialei Feng <jialei.feng@intel.com>  Thu, 30 Mar 2023 18:33:00 +0800

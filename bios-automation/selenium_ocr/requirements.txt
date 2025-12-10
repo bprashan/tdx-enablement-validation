@@ -1,0 +1,7 @@
+selenium
+webdriver-manager
+pytesseract
+requests
+easyocr
+Pillow
+pyautogui
