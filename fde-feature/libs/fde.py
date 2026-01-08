@@ -1,14 +1,15 @@
 import subprocess
 import os
 import time
-from utils import run_command, clone_repo, run_command_with_popen, remove_host_from_known_hosts, set_environment_variables
+from .utils import run_command, clone_repo, run_command_with_popen, remove_host_from_known_hosts, set_environment_variables
 import re
 import binascii
 import urllib.request
 import sys
-from tdx import clone_and_patch_tdx_repository, create_td_image
+from .tdx import update_canonical_tdx_repository, create_td_image
 sys.path.insert(1, os.path.join(os.getcwd(), 'configuration'))
 import configuration
+import shutil
 
 def add_intel_sgx_repository():
     """Add Intel SGX repository to apt sources and update package lists."""
@@ -16,29 +17,29 @@ def add_intel_sgx_repository():
     repo_entry = "deb [signed-by=/etc/apt/keyrings/intel-sgx-keyring.asc arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu noble main"
     add_repo_command = f"echo '{repo_entry}' | sudo tee /etc/apt/sources.list.d/intel-sgx.list"
     run_command(add_repo_command, shell=True)
-    
+
     # Download the GPG key
     wget_command = ["wget", "https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key"]
     run_command(wget_command)
-    
+
     # Create keyrings directory
     mkdir_command = ["sudo", "mkdir", "-p", "/etc/apt/keyrings"]
     run_command(mkdir_command)
-    
+
     # Add the key to keyrings
     add_key_command = "cat intel-sgx-deb.key | sudo tee /etc/apt/keyrings/intel-sgx-keyring.asc > /dev/null"
     run_command(add_key_command, shell=True)
-    
+
     # Update package lists
     update_command = ["sudo", "apt-get", "update"]
     run_command(update_command)
-    
+
     print("Intel SGX repository added successfully.")
 
 def install_required_packages():
     """Install specified packages."""
     install_command = [
-        "sudo", "apt", "install", "-y",  "allow-downgrades", "pkg-config", "gpg", "wget", "openssl",
+        "sudo", "apt", "install", "-y",  "--allow-downgrades", "pkg-config", "gpg", "wget", "openssl",
         "libcryptsetup-dev", "python3-venv", "libtdx-attest-dev", "sshpass", "qemu-system-x86",
         "libtss2-dev", "build-essential"
     ]
@@ -56,15 +57,15 @@ def generate_encryption_key_and_id():
     # Generate k_RFS: 32 random bytes in hex format
     result = subprocess.run(['openssl', 'rand', '-hex', '32'], capture_output=True, text=True)
     k_rfs = result.stdout.strip()
-    
+
     # Generate ID_K_RFS: keybroker/key/ + 32 random bytes in hex format
     result = subprocess.run(['openssl', 'rand', '-hex', '32'], capture_output=True, text=True)
     id_k_rfs = f"keybroker/key/{result.stdout.strip()}"
-    
+
     # Set environment variables
     set_environment_variables(key="k_RFS", data=k_rfs)
     set_environment_variables(key="ID_k_RFS", data=id_k_rfs)
-    
+
     print(f"Generated encryption key (k_RFS): {k_rfs}")
     print(f"Generated key ID (ID_K_RFS): {id_k_rfs}")
 
@@ -97,21 +98,21 @@ def create_fde_setup_config_file():
     ref_values_dir = configuration.trustee_reference_value_dir
     os.makedirs(ref_values_dir, exist_ok=True)
     print(f"Created directory: {ref_values_dir}")
-    
+
     # Get current working directory and construct file path
     setup_config_path = os.path.join(os.getcwd(), configuration.trustee_config_file)
-    
+
     # Get system IP
     result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
     system_ip = result.stdout.strip().split()[0] if result.stdout.strip() else ""
-    
+
     # Set SYSTEM_IP environment variable
     set_environment_variables(key="SYSTEM_IP", data=system_ip)
-    
+
     # Set NO_PROXY with system IP and trustee services
     no_proxy = f"{system_ip},trustee-as,trustee-kbs,trustee-vault"
     set_environment_variables(key="NO_PROXY", data=no_proxy)
-    
+
     # Create the config file content
     config_content = f"""#!/bin/bash
 
@@ -126,17 +127,17 @@ export SK_KBS_ADMIN=
 export UUID=
 export label=
 """
-    
+
     # Write the config file
     with open(setup_config_path, 'w') as f:
         f.write(config_content)
-    
+
     # Make the file executable
     os.chmod(setup_config_path, 0o755)
-    
+
     # Set environment variable
     set_environment_variables(key="SETUP_CONFIG_FILE", data=setup_config_path)
-    
+
     print(f"Created setup config file at: {setup_config_path}")
     print(f"Set SYSTEM_IP to: {system_ip}")
     print(f"Set NO_PROXY to: {no_proxy}")
@@ -147,6 +148,8 @@ def setup_fde_environment():
     add_intel_sgx_repository()
     install_required_packages()
     clone_repo(repo_url = configuration.repo_url, clone_dir = configuration.repo_name, branch = configuration.branch, recurse_submodules = True)
+    # shutil.copytree('../../fde', './fde')
+    # subprocess.run(['git', 'submodule', 'update', '--init'], capture_output=True, text=True)
     os.chdir(os.path.join(configuration.dir_name))
     print(f"Changed working directory to {os.getcwd()}")
     create_fde_setup_config_file()
@@ -157,30 +160,28 @@ def setup_fde_environment():
 
 def copy_boot_files_to_canonical_tdx():
     """Copy initrd.img-24.04 and vmlinuz-24.04 from tools/image/ to canonical-tdx/guest-tools/image/."""
-    import shutil
-    
     # Source directory (relative to current working directory)
     source_dir = "tools/image"
-    
+
     # Destination directory
     dest_dir = "canonical-tdx/guest-tools/image"
-    
+
     # Files to copy
     files_to_copy = ["initrd.img-24.04", "vmlinuz-24.04"]
-    
+
     # Ensure destination directory exists
     os.makedirs(dest_dir, exist_ok=True)
-    
+
     for file_name in files_to_copy:
         source_file = os.path.join(source_dir, file_name)
         dest_file = os.path.join(dest_dir, file_name)
-        
+
         if os.path.exists(source_file):
-            shutil.copy2(source_file, dest_file)
+            shutil.copy(source_file, dest_file)
             print(f"Copied {file_name} from {source_dir} to {dest_dir}")
         else:
             print(f"Warning: {source_file} not found. Skipping.")
-    
+
     print("Boot files copy completed.")
 
 
@@ -217,16 +218,16 @@ def parse_and_update_encryption_output(console_output):
     # Set environment variables for paths
     set_environment_variables(key="OVMF_PATH", data=ovmf_path)
     set_environment_variables(key="ENCRYPTED_IMAGE_PATH", data=image_path)
-    
+
     # Get setup config file path
     setup_config_file = os.environ.get('SETUP_CONFIG_FILE')
-    
+
     # Set UUID if found
     if uuid_match:
         uuid = uuid_match.group(1)
         set_environment_variables(key="UUID", data=uuid)
         print(f"Set UUID: {uuid}")
-        
+
         # Update setup config file with UUID
         if setup_config_file and os.path.exists(setup_config_file):
             sed_uuid_command = f'sed -i "/^export UUID=/c\\\\export UUID=\\"{uuid}\\"" "{setup_config_file}"'
@@ -234,13 +235,13 @@ def parse_and_update_encryption_output(console_output):
             print(f"Updated UUID in {setup_config_file}")
     else:
         print("Warning: UUID not found in the console output.")
-    
+
     # Set label if found
     if label_match:
         label = label_match.group(1)
         set_environment_variables(key="label", data=label)
         print(f"Set label: {label}")
-        
+
         # Update setup config file with label
         if setup_config_file and os.path.exists(setup_config_file):
             sed_label_command = f'sed -i "/^export label=/c\\\\export label=\\"{label}\\"" "{setup_config_file}"'
@@ -259,10 +260,9 @@ def encrypt_image(skip_encrypt_image_path=False, extra_args=None):
         command.extend(["-e", encrypted_image_path])
 
     kbs_cert_path=os.environ["KBS_CERT_PATH"]
-    pr_kr_path=os.environ["PK_KR_PATH"]
     fde_key=os.environ["k_RFS"]
     kbs_url=os.environ["KBS_URL"]
-    key_id=os.environ["ID_K_RFS"]
+    key_id=os.environ["ID_k_RFS"]
 
     command.extend([
         "-c", kbs_cert_path,
@@ -366,12 +366,12 @@ def store_key_in_kbs():
     ]
 
     result = run_command(command)
-    
+
     if result:
         print("Successfully stored encryption key in KBS")
     else:
         print("Failed to store encryption key in KBS")
-    
+
     return result
 
 
@@ -381,7 +381,7 @@ def verify_td_encrypted_image(ssh_command=None):
     result = execute_td_command(ssh_command)
     if result is not None and \
         configuration.fde_check in result and \
-        configuration.os_name_2404 in result and \
+        configuration.os_version in result and \
         configuration.ubuntu_kernel_version in result:
         return True
     else:

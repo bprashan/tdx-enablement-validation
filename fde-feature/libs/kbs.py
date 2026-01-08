@@ -1,8 +1,8 @@
 import subprocess
 import os
 import sys
-from utils import run_command, set_environment_variables
-from docker import remove_docker_container, build_docker_image, run_docker_container, verify_docker_container, get_build_args
+from .utils import run_command, set_environment_variables
+from .docker import remove_docker_container, build_docker_image, run_docker_container, verify_docker_container, get_build_args
 import time
 sys.path.insert(1, os.path.join(os.getcwd(), 'configuration'))
 import configuration
@@ -104,6 +104,32 @@ def modify_kbs_dockerfile():
         f.write(modified_content)
     
     print("Modified KBS Dockerfile to add Vault support")
+
+
+def update_attestation_service_dcap_version():
+    """Update Attestation Service Dockerfile to use specific DCAP versions."""
+    dockerfile_path = "trustee/attestation-service/docker/as-grpc/Dockerfile"
+    
+    # Read the file
+    with open(dockerfile_path, 'r') as f:
+        content = f.read()
+    
+    # Apply the modifications
+    modified_content = content.replace('ubuntu jammy main', 'ubuntu noble main')
+    modified_content = modified_content.replace(
+        'libsgx-dcap-quote-verify-dev',
+        'libsgx-dcap-quote-verify=1.23.* libsgx-dcap-quote-verify-dev=1.23.*'
+    )
+    modified_content = modified_content.replace(
+        'libsgx-dcap-default-qpl libsgx-dcap-quote-verify ',
+        'libsgx-dcap-default-qpl=1.23.* libsgx-dcap-quote-verify=1.23.* '
+    )
+    
+    # Write back
+    with open(dockerfile_path, 'w') as f:
+        f.write(modified_content)
+    
+    print("Updated Attestation Service Dockerfile with DCAP version specifications")
 
 
 def build_kbs():
@@ -316,6 +342,9 @@ def update_kbs_env_file(kbs_port, kbs_url, kbs_cert_path, sk_kbs_admin):
 def setup_kbs_environment():
     """Set up the complete KBS environment with Attestation Service and KBS."""
     print("=== Setting up Trustee Attestation Service ===")
+    
+    # Update Attestation Service DCAP version
+    update_attestation_service_dcap_version()
     
     # Build and start Attestation Service
     if not build_attestation_service():

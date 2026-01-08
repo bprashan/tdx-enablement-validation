@@ -2,7 +2,7 @@ import shutil
 import os
 import sys
 import fileinput
-from utils import run_command, clone_repo, set_environment_variables
+from .utils import run_command, clone_repo, set_environment_variables
 sys.path.insert(1, os.path.join(os.getcwd(), 'configuration'))
 import configuration
 

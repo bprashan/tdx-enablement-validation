@@ -6,11 +6,8 @@ import string
 import subprocess
 import time
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../libs'))
-from fde import *
-from kbs import run_kbs, check_error_messages, get_docker_logs
-from utils import set_environment_variables, run_command, get_ip_address, manage_qcow2_image
-from kms import login_to_vault
+from libs.fde import *
+from libs.utils import set_environment_variables, run_command, get_ip_address, manage_qcow2_image
 
 # @pytest.mark.usefixtures("setup_environment")
 # class TestClass:
@@ -52,8 +49,7 @@ def run_command_with_forbidden_param( command, forbidden_param):
 def test_e2e_fde_workflow():
     """Tests the end-to-end FDE workflow."""
     encrypt_base_image()
-    quote_set_success = fetch_td_quote()
-    assert quote_set_success(), "Failed to generate TD measurement"
+    assert fetch_td_quote(), "Failed to generate TD measurement"
     assert store_key_in_kbs(), "Failed to store encryption key in KBS"
     assert verify_td_encrypted_image(), "TD encrypted image verification failed"
 

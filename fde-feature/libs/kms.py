@@ -2,8 +2,8 @@ import subprocess
 import sys
 import re
 import os
-from utils import set_environment_variables, run_command
-from docker import remove_docker_container, run_docker_container, verify_docker_container, get_build_args
+from .utils import set_environment_variables, run_command
+from .docker import remove_docker_container, run_docker_container, verify_docker_container, get_build_args
 import time
 sys.path.insert(1, os.path.join(os.getcwd(), 'configuration'))
 import configuration
