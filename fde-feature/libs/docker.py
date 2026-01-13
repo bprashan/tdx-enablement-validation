@@ -219,7 +219,7 @@ def get_build_args():
     
     return build_args
 
-def setup_docker_environment():
+def setup_docker():
     install_docker()
     enable_docker_non_root()
 

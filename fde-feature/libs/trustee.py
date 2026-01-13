@@ -4,7 +4,9 @@ import sys
 from .utils import run_command, set_environment_variables
 from .docker import remove_docker_container, build_docker_image, run_docker_container, verify_docker_container, get_build_args
 import time
-sys.path.insert(1, os.path.join(os.getcwd(), 'configuration'))
+
+# Add configuration directory to path
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'configuration'))
 import configuration
 
 
@@ -339,7 +341,7 @@ def update_kbs_env_file(kbs_port, kbs_url, kbs_cert_path, sk_kbs_admin):
     print(f"Updated environment file at {env_file_path}")
 
 
-def setup_kbs_environment():
+def setup_trustee():
     """Set up the complete KBS environment with Attestation Service and KBS."""
     print("=== Setting up Trustee Attestation Service ===")
     

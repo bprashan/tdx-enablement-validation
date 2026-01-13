@@ -5,7 +5,9 @@ import os
 from .utils import set_environment_variables, run_command
 from .docker import remove_docker_container, run_docker_container, verify_docker_container, get_build_args
 import time
-sys.path.insert(1, os.path.join(os.getcwd(), 'configuration'))
+
+# Add configuration directory to path
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'configuration'))
 import configuration
 
 
@@ -30,14 +32,19 @@ def create_docker_network():
         print(create_process.stderr)
 
 
-def start_vault_container():
-    """Start Vault in a Docker container in development mode."""
+def start_vault_container(vault_root_token=None):
+    """Start Vault in a Docker container in development mode.
+    
+    Args:
+        vault_root_token: Optional vault root token. If not provided, a new one will be generated.
+    """
     # Remove existing container if it exists
     remove_docker_container("trustee-vault")
     
-    # Generate a random 128-bit token using openssl
-    result = subprocess.run(['openssl', 'rand', '-hex', '16'], capture_output=True, text=True)
-    vault_root_token = result.stdout.strip()
+    # Generate a random 128-bit token using openssl if not provided
+    if not vault_root_token:
+        result = subprocess.run(['openssl', 'rand', '-hex', '16'], capture_output=True, text=True)
+        vault_root_token = result.stdout.strip()
     
     # Set the environment variable VAULT_ROOT_TOKEN
     set_environment_variables(key="VAULT_ROOT_TOKEN", data=vault_root_token)
@@ -97,7 +104,7 @@ def update_env_file():
     print(f"Updated environment file at {env_file_path}")
 
 
-def setup_kms_environment():
+def setup_vault():
     """Set up the KMS environment with Vault running in a Docker container."""
     create_docker_network()
     

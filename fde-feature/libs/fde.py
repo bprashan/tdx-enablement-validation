@@ -7,9 +7,11 @@ import binascii
 import urllib.request
 import sys
 from .tdx import update_canonical_tdx_repository, create_td_image
-sys.path.insert(1, os.path.join(os.getcwd(), 'configuration'))
-import configuration
 import shutil
+
+# Add configuration directory to path
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'configuration'))
+import configuration
 
 def add_intel_sgx_repository():
     """Add Intel SGX repository to apt sources and update package lists."""
@@ -147,10 +149,10 @@ export label=
 def setup_fde_environment():
     add_intel_sgx_repository()
     install_required_packages()
-    clone_repo(repo_url = configuration.repo_url, clone_dir = configuration.repo_name, branch = configuration.branch, recurse_submodules = True)
-    # shutil.copytree('../../fde', './fde')
-    # subprocess.run(['git', 'submodule', 'update', '--init'], capture_output=True, text=True)
+    # clone_repo(repo_url = configuration.repo_url, clone_dir = configuration.repo_name, branch = configuration.branch, recurse_submodules = True)
+    shutil.copytree('../../fde', './fde')
     os.chdir(os.path.join(configuration.dir_name))
+    result = subprocess.run(['git', 'submodule', 'update', '--init'], capture_output=True, text=True)
     print(f"Changed working directory to {os.getcwd()}")
     create_fde_setup_config_file()
     build_project()

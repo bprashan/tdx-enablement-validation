@@ -3,7 +3,9 @@ import os
 import sys
 import fileinput
 from .utils import run_command, clone_repo, set_environment_variables
-sys.path.insert(1, os.path.join(os.getcwd(), 'configuration'))
+
+# Add configuration directory to path
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'configuration'))
 import configuration
 
 def update_canonical_tdx_repository():

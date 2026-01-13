@@ -5,7 +5,9 @@ import socket
 import shutil
 import psutil
 import time
-sys.path.insert(1, os.path.join(os.getcwd(), 'configuration'))
+
+# Add configuration directory to path
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'configuration'))
 import configuration
 
 def run_command(command, shell=False, cwd=None):
