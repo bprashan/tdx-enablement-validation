@@ -44,6 +44,17 @@ def enable_docker_non_root():
         print(f"Adding {user} to the group")
         subprocess.run(["sudo", "usermod", "-aG", "docker", user], check=True, capture_output=True, text=True)
 
+        # Change ownership of docker socket
+        subprocess.run(["sudo", "chown", f"{user}:docker", "/var/run/docker.sock"], check=True, capture_output=True, text=True)
+        
+        # Restart docker service to apply changes
+        subprocess.run(["sudo", "systemctl", "restart", "docker"], check=True, capture_output=True, text=True)
+        
+        # Apply group changes to current shell by spawning a new shell with newgrp
+        print("Applying docker group permissions...")
+        # Note: newgrp starts a new shell, so we need to handle it specially
+        # The calling script will need to be re-executed in the new group context
+
         print("Docker enabled for non-root user.")
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")

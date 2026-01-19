@@ -149,8 +149,8 @@ export label=
 def setup_fde_environment():
     add_intel_sgx_repository()
     install_required_packages()
-    # clone_repo(repo_url = configuration.repo_url, clone_dir = configuration.repo_name, branch = configuration.branch, recurse_submodules = True)
-    shutil.copytree('../../fde', './fde')
+    clone_repo(repo_url = configuration.repo_url, clone_dir = configuration.repo_name, branch = configuration.branch, recurse_submodules = True)
+    #shutil.copytree('../../fde', './fde')
     os.chdir(os.path.join(configuration.dir_name))
     result = subprocess.run(['git', 'submodule', 'update', '--init'], capture_output=True, text=True)
     print(f"Changed working directory to {os.getcwd()}")
@@ -193,8 +193,8 @@ def parse_and_update_encryption_output(console_output):
     then sets them as environment variables and updates the setup config file.
     """
     # Define regex patterns to extract values
-    uuid_pattern = r"export UUID=([a-f0-9\-]+)"
-    label_pattern = r"export label=(\S+)"
+    uuid_pattern = r"UUID=([a-f0-9\-]+)"
+    label_pattern = r"label=(\S+)"
     ovmf_pattern = r"OVMF_PATH:\s*(\S+)"
     image_pattern = r"IMAGE_PATH:\s*(\S+)"
 
@@ -302,7 +302,7 @@ def launch_td_guest(mode):
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     return process
 
-def execute_td_command(ssh_command, sleep_duration=120):
+def execute_td_command(ssh_command, sleep_duration=120, shutdown_timeout=30):
     """Execute the TD command and SSH command."""
     process = launch_td_guest("TD_FDE_BOOT")
 
@@ -320,6 +320,22 @@ def execute_td_command(ssh_command, sleep_duration=120):
             remove_host_from_known_hosts('localhost', 10022)
             safe_shut_down_command = "sshpass -p 123456 ssh -o StrictHostKeyChecking=no -p 10022 root@localhost 'sudo shutdown now'"
             run_command(safe_shut_down_command, shell=True)
+            
+            # Wait for the process to terminate gracefully
+            print(f"Waiting {shutdown_timeout} seconds for TD guest to shut down...")
+            try:
+                process.wait(timeout=shutdown_timeout)
+                print("TD guest shut down successfully.")
+            except subprocess.TimeoutExpired:
+                print("TD guest did not shut down gracefully. Forcing termination...")
+                process.terminate()
+                time.sleep(5)
+                if process.poll() is None:
+                    print("Force killing TD guest process...")
+                    process.kill()
+                    process.wait()
+                print("TD guest process terminated.")
+            
             return result
     else:
         print("TD guest boot failure...")
@@ -330,7 +346,8 @@ def extract_quote(output):
     if match:
         return match.group(1)
     else:
-        raise ValueError("QUOTE not found in the output.")
+        print("Warning: QUOTE not found in the output.")
+        return None
 
 def get_td_measurement():
     """Get the TD measurement"""
@@ -367,14 +384,14 @@ def store_key_in_kbs():
         '--k-rfs', os.environ["k_RFS"]
     ]
 
-    result = run_command(command)
+    retcode, output, error = run_command_with_popen(command)
 
-    if result:
+    if retcode == 0:
         print("Successfully stored encryption key in KBS")
+        return True
     else:
         print("Failed to store encryption key in KBS")
-
-    return result
+        return False
 
 
 def verify_td_encrypted_image(ssh_command=None):

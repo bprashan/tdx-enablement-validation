@@ -72,6 +72,8 @@ def set_environment_variables(key=None, data=None):
                 os.environ[key] = value.strip('"')
                 print(f"Set environment variable: {key}={value.strip('\"')}")
         return True
+    
+    return False
 
 def get_ip_address():
     """Retrieve the actual IP address of the machine."""
@@ -183,3 +185,26 @@ def manage_qcow2_image(image_path, mount_point, partition):
         run_command(['sudo', 'umount', f'/dev/nbd0p{partition}', mount_point])
         run_command(['sudo', 'qemu-nbd', '--disconnect', '/dev/nbd0'])
         print(f"Partition /dev/nbd0p{partition} unmounted and NBD device disconnected")
+
+
+def check_sudo_privileges():
+    """Check if the current user has sudo privileges and can run sudo without password."""
+    try:
+        # Check if sudo is available and user has passwordless privileges
+        run_command(['sudo', '-n', 'true'])
+        print("Sudo privileges verified: User can run sudo without password")
+        return True
+        
+    except subprocess.CalledProcessError:
+        print("ERROR: Current user does not have passwordless sudo privileges.")
+        print("\nThis test suite requires passwordless sudo access.")
+        print("\nTo enable passwordless sudo, add the following line to /etc/sudoers:")
+        print(f"  {os.getenv('USER', 'your_username')} ALL=(ALL) NOPASSWD:ALL")
+        print("\nUse 'sudo visudo' to edit the sudoers file safely.")
+        sys.exit(1)
+    except FileNotFoundError:
+        print("ERROR: 'sudo' command not found on this system.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"ERROR: Unexpected error during sudo check: {e}")
+        sys.exit(1)
