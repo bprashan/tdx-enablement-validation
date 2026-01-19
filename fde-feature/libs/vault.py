@@ -32,11 +32,12 @@ def create_docker_network():
         print(create_process.stderr)
 
 
-def start_vault_container(vault_root_token=None):
+def start_vault_container(vault_root_token=None, enable_keybroker=True):
     """Start Vault in a Docker container in development mode.
     
     Args:
         vault_root_token: Optional vault root token. If not provided, a new one will be generated.
+        enable_keybroker: Whether to enable the KV secrets engine at path 'keybroker'. Defaults to True.
     """
     # Remove existing container if it exists
     remove_docker_container("trustee-vault")
@@ -59,11 +60,13 @@ def start_vault_container(vault_root_token=None):
     # Add IPC_LOCK capability
     extra_flags = ["--cap-add=IPC_LOCK"]
     
-    # Command to start vault and enable secrets engine
-    command_args = [
-        "sh", "-c",
-        "docker-entrypoint.sh server -dev & until vault status >/dev/null 2>&1; do sleep 1; done; vault secrets enable -version=1 -path=keybroker kv 2>/dev/null || true && wait"
-    ]
+    # Command to start vault and optionally enable secrets engine
+    if enable_keybroker:
+        startup_cmd = "docker-entrypoint.sh server -dev & until vault status >/dev/null 2>&1; do sleep 1; done; vault secrets enable -version=1 -path=keybroker kv 2>/dev/null || true && wait"
+    else:
+        startup_cmd = "docker-entrypoint.sh server -dev & until vault status >/dev/null 2>&1; do sleep 1; done && wait"
+    
+    command_args = ["sh", "-c", startup_cmd]
     
     # Start the container using the common function
     success = run_docker_container(
@@ -77,7 +80,8 @@ def start_vault_container(vault_root_token=None):
     
     if success:
         print(f"Vault container started successfully with root token: {vault_root_token}")
-        print("Vault will automatically enable KV secrets engine at path 'keybroker'")
+        if enable_keybroker:
+            print("Vault will automatically enable KV secrets engine at path 'keybroker'")
         time.sleep(5)  # Wait for the container to start and initialize
         return True
     else:
